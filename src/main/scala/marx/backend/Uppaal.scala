@@ -78,8 +78,8 @@ object Uppaal :
     val (init,usedTypes1) = getInit(aut,typeCtx)
     val (rules,usedTypes2) = getRules(aut,typeCtx)
     val (inv,usedTypes3) = getInv(aut,typeCtx)
-    println(s"ins: ${aut.inputs.map(x=>s"${fixVar(x)}:${typeCtx.getConcreteType(x)}").mkString(",")}; outs: ${
-      aut.outputs.map(x=>s"${fixVar(x)}:${typeCtx.getConcreteType(x)}").mkString(",")}")
+//    println(s"ins: ${aut.inputs.map(x=>s"${fixVar(x)}:${typeCtx.getConcreteType(x)}").mkString(",")}; outs: ${
+//      aut.outputs.map(x=>s"${fixVar(x)}:${typeCtx.getConcreteType(x)}").mkString(",")}")
     val autUpp = s">>> init: $init\n>>> inv $inv\n>>> rules: ${rules.mkString("\n  +++")}"
     (autUpp, usedTypes1++usedTypes2++usedTypes3)
 

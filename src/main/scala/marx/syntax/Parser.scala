@@ -276,8 +276,7 @@ object Parser :
 
   object Examples:
     val ex1 =
-      """
-        |data CtrCom = Start | Left | Right | Stop | Reset;
+      """data CtrCom = Start | Left | Right | Stop | Reset;
         |data Heartbeat = Tick;
         |data Error = BadDec | BadMon; // ...
         |
@@ -286,7 +285,7 @@ object Parser :
         |// inferred types: forall a. actions:a?, outA:a!, outT:Heartbeat!
         |aut dash(actions) {
         |  clock t;
-        |  init ticks:=0, working:=();
+        |  init ticks:=0, at(working);
         |
         |  inv at(working) -> (t<=16); // Note: (t<=16)||notAt(working) is not supported in UPPAAL
         |
@@ -301,7 +300,7 @@ object Parser :
         |}
         |
         |// Decode and sync with MinSyn-MaxSyn period (22-23), check with decoding time of MinDec-MaxDec (12-13) and error after MaxTries (03)
-        |aut decoder(inAct, beat, otherDec) {
+        |aut decoder[n](inAct, beat, other) {
         |  clock dec, syn, tk;
         |
         |  init  at(waiting), tries:=3;// waiting := ();
@@ -340,19 +339,16 @@ object Parser :
         |}
         |
         |aut monitor(in,otherMon) { rules from(in) --> out=in; return out, a, b;} // todo
-        |aut controller(act,err,rep) { return stat,comm;} // todo
+        |aut controller(act,err,rep) { rules from(act) --> stat=act; return stat,comm;} // todo
         |
-//        | decoder(toDec1,hb,lastAct) --> act1,hb1,warn1,err1;
-//        | actions() --> x;
-//        | dash(x) --> action,hb;
         |// Dashboard produces actions
         |dash(actions()) --> action,hb;
         |action --> toDec1;
         |action --> toDec2;
         |
         |// decoders produce actions, heartbeats, warnings, and errors
-        |decoder(toDec1,hb,lastActD2) --> actD1,hb1,warnD1,errToC1;
-        |decoder(toDec2,hb,lastActD1) --> actD2,hb2,warnD2,errToC2;
+        |decoder[1](toDec1,hb,lastActD2) --> actD1,hb1,warnD1,errToC1;
+        |decoder[2](toDec2,hb,lastActD1) --> actD2,hb2,warnD2,errToC2;
         |actD1 --{Stop}--> lastActD1;
         |actD2 --{Stop}--> lastActD2;
         |
@@ -368,8 +364,7 @@ object Parser :
         |""".stripMargin
 
     val ex2:String =
-      """
-        |data Fruit  = Apple | Pear;
+      """data Fruit  = Apple | Pear;
         |
         |def fifo2(a) {
         |  //data F2 = Apple | Pineapple; // TODO: qualified declarations (fifo2.F2 = fifo2.Apple |...)
@@ -380,4 +375,33 @@ object Parser :
         |fifo2(x) --> y;
         |xx --[Apple]-->yy;
         |timer[5](y) --> z;""".stripMargin
+
+    val ex3: String =
+      """const myConstant=5;
+        |
+        |aut lossyfifo(a) {
+        |  rules
+        |  	[update] from(a) --> m:=a;
+        |    [sendBuf] from(m) --> b=m;
+        |  return b;
+        |}
+        |
+        |aut twice[v] {
+        |  init at(st1);
+        |	rules
+        |    [send1] from(st1) -->
+        |    				res=v, to(st2);
+        |    [send2] from(st2) -->
+        |            res=v;
+        |	return res;
+        |}
+        |
+        |lossyfifo(x) --> y;
+        |twice[True]() --> x;""".stripMargin
+
+    /** Sequence-3 example */
+    val ex4: String =
+      """x3--[()]-->x1; x1---o1; o1-->out1;
+        |x1--[]-->x2;   x2---o2; o2-->out2;
+        |x2--[]-->x3;   x3---o3; o3-->out3;""".stripMargin
 

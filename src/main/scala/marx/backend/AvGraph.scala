@@ -32,7 +32,7 @@ case class AvGraph(init:Node, edges: Map[Node,Set[(Rule,Node)]], inv:Set[Term]):
     def mkNodeInit =
       val initAut = aut.init.filter(_.t!=Term.unitT)
       mkNode(init).dropRight(3)+
-        (if initAut.nonEmpty && (init--intersectNodes).nonEmpty then "<br>" else "") +
+        (if initAut.nonEmpty && (init--intersectNodes).nonEmpty then "<br/>" else "") +
         (if initAut.nonEmpty then initAut.map(fixAssgn(_,":=")).mkString(",") else "")+
       " ])"
     def mkLbl(r:Rule): String =
@@ -40,15 +40,6 @@ case class AvGraph(init:Node, edges: Map[Node,Set[(Rule,Node)]], inv:Set[Term]):
 //      r // --LBL--\\GET(in1,in2) PUT(out1,out2)\\preds\\writes
       fixRule(r,aut)
       .toString
-//      .replaceAll(";",",")
-//      .replaceAll("§","_")
-//      .replaceAll("\\|","_")
-//      .replaceAll("get\\(","")
-//      .replaceAll("\\(","_")
-//      .replaceAll("\\)","")
-//      .replaceAll("-->","<br>")
-//      .replaceAll("\\[","--")
-//      .replaceAll("\\]","--<br>")
 
     val es = for e<-edges; target<-e._2 yield
       s"  ${mkNode(e._1)} --> |${mkLbl(target._1)}| ${mkNode(target._2)}"
@@ -57,7 +48,7 @@ case class AvGraph(init:Node, edges: Map[Node,Set[(Rule,Node)]], inv:Set[Term]):
     val fst = s"style ${mkNodeId(init)} fill:#4f4,stroke:#333,stroke-width:4px\n" +
       (if inv.nonEmpty then s"style __inv_${name2}__ fill:#ff4,stroke:#333,stroke-width:2px" else "")
     val inv2 = if inv.nonEmpty
-      then inv.map(fixTerm).toList.sorted.mkString(s"  __inv_${name2}__["," <br> ","]; \n")
+      then inv.map(fixTerm).toList.sorted.mkString(s"  __inv_${name2}__["," <br/> ","]; \n")
       else ""
     if edges.isEmpty then "subgraph $name2\n  empty([ ])\n  end"
     else s"subgraph $name2\n  direction TB\n$inv2${(es++es2).mkString("\n")}\n  $fst\n  $mkNodeInit\n  end"
@@ -65,15 +56,15 @@ case class AvGraph(init:Node, edges: Map[Node,Set[(Rule,Node)]], inv:Set[Term]):
 
   private def fixRule(r:Rule,aut:Automaton): String =
     def mb[A](x:Iterable[A],f:Iterable[A]=>String) = if x.isEmpty then "" else f(x)
-    mb(r.lbls,x=>s"--${x.mkString(",")}--<br>")+
+    mb(r.lbls,x=>s"--${x.mkString(",")}--<br/>")+
     mb((r.get++r.ask++r.eqs.map(_.v))--aut.registers, x=>
       {val (i,o)=x.partition(r.get++r.ask);
         s" ${i.map(p=>if r.get(p) then fix4Mermaid(p) else fix4Mermaid(p)+"?").mkString(",")} >> ${
-          o.map(fix4Mermaid).mkString(",")} <br>"}) +
+          o.map(fix4Mermaid).mkString(",")} <br/>"}) +
     mb(r.und--aut.registers , x=>s" und-${x.map(fix4Mermaid).mkString("_")}, ")+
     mb(r.pred, x=> s" ${x.map(fixTerm).mkString(", ")}")+
-      (if r.pred.isEmpty && r.und.isEmpty then "" else "<br>")+
-    mb(r.eqs, x=> s" ${x.map(fixAssgn(_,"=")).mkString(", ")}")+
+      (if r.pred.isEmpty && r.und.isEmpty then "" else "<br/>")+
+    mb(r.eqs, x=> s" ${x.map(fixAssgn(_,"=")).mkString(", ")}, ")+
     mb(r.upd.filter(_.t!=Term.unitT), ups=>ups.map(fixAssgn(_,":=")).mkString(",") )
   private def fixTerm(t:Term): String = fix4Mermaid(Show(t))
   private def fixAssgn(a:Assignment,op:String): String =
@@ -83,6 +74,8 @@ case class AvGraph(init:Node, edges: Map[Node,Set[(Rule,Node)]], inv:Set[Term]):
     .replaceAll("§","_")
     .replaceAll("\\(","_")
     .replaceAll("\\)","_")
+    .replaceAll("\\[","_")
+    .replaceAll("\\]","_")
 
 
 object AvGraph:
@@ -99,11 +92,18 @@ object AvGraph:
     //println(res)
     res
 
-  def allGraphs(n:Network): Set[AvGraph] =
-    collectAut(n).map(a=>apply(a._2))
+//  def allUsedGraphs(n:Network): Set[AvGraph] =
+//    Network.instantiateNamedAuts(n).map(a=>apply(a._2)).toSet
+//
+//  def allMainGraphs(n:Network): Set[AvGraph] =
+//    collectAut(n).map(a=>apply(a._2))
 
   def allMermaid(n:Network): String =
     val auts = collectAut(n).map(aut => apply(aut._2).toMermaid(aut._1,aut._2))
+    s"flowchart LR\n${auts.mkString("\n")}"
+
+  def allUsedMermaid(n:Network): String =
+    val auts = Network.instantiateNamedAuts(n).map(aut => apply(aut._2).toMermaid(aut._1,aut._2))
     s"flowchart LR\n${auts.mkString("\n")}"
 
   def apply(a:Automaton): AvGraph =

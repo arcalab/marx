@@ -15,7 +15,7 @@ import java.lang
 object Encode:
   /** Encode a syntactic program into a core network, removing syntactic sugar and simplifications. */
   def apply(p:Program, imported:Set[String]=Set()): Network =
-    apply(collectDecl(p.main+(""),p.modules+(""->Prelude.syncModule)+("reo"->Prelude.reoModule),Set()),Network.empty)
+    apply(collectDecl(p.main+(""),p.modules+(""->Prelude.syncModule)+("reo"->Prelude.reoModule),Set()),Prelude.defaultNet)
 
   /** Traverse imports to collect all needed declarations. */
   def collectDecl(module: Module, scope:Map[String,Module], done:Set[String]): List[Decl] = module match

@@ -1,8 +1,8 @@
 package marx
 
-import marx.core.Automaton
+import marx.core.{Automaton, Network}
 import marx.core.Network.Constructor
-import marx.core.Term.{IntVal, Interpretation, falseT, trueT}
+import marx.core.Term.{IntVal, Interpretation, falseT, trueT, vars}
 import marx.typing.Type.{BaseType, VarType}
 import marx.syntax.Program.Decl.{AutDecl, DataDecl}
 import marx.typing.MutTypeCtxt
@@ -19,10 +19,12 @@ object Prelude:
   /** Interpretations of some function symbols */
   val interpretations: Map[String,Interpretation] = Map(
     "+" -> arithm(_+_), "-" -> arithm(_-_), "*" -> arithm(_*_), "/" -> arithm(_/_),
-    "==" -> {case List(t1,t2) => if t1==t2 then trueT else falseT},
-    "!=" -> {case List(t1,t2) => if t1!=t2 then trueT else falseT},
+    "==" -> {case List(t1,t2) if t1==t2 => trueT; case List(t1,t2) if vars(t1).isEmpty && vars(t2).isEmpty && t1!=t2 => falseT},
+    "!=" -> {case List(t1,t2) if t1==t2 => falseT; case List(t1,t2) if vars(t1).isEmpty && vars(t2).isEmpty && t1!=t2 => trueT},
     "!" -> {case List(`trueT`) => falseT; case List(`falseT`) => trueT}
   )
+
+  val defaultNet: Network = Network(Map(),interpretations,Map(),Nil)
 
   ///////////
   // Types //

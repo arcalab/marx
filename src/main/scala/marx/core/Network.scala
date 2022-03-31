@@ -50,6 +50,24 @@ object Network:
   //    sys.error("not done yet")
 
 
+  def instantiateNamedAuts(net:Network): List[(String,Automaton)] =
+    given Who = Who("Netw")
+    import marx.Error.debug
+    debug(s"Translating net with conn ${net.connectors.keys} - ${net}")
+    given subst: MutSubst = new MutSubst()
+    val auts = for Link(name,terms,inputs,outputs) <- net.links yield
+      if !net.connectors.contains(name) then
+        debug(s"NOT FOUND $name in ${net.connectors.keys.mkString(",")}")
+      val termName = if terms.nonEmpty then s"[${terms.map(Show.apply).mkString(",")}]" else ""
+      net.connectors(name) match {
+        case Connector.CNet(net2,args,ins,outs) =>
+          name+termName -> instantiate(CAut(netToAutomaton(net2),args,ins,outs),terms,inputs,outputs)
+        case c:Connector.CAut =>
+          name+termName -> instantiate(c,terms,inputs,outputs)
+      }
+    //println(s"[Inst] got subst: ${subst.subst}")
+    auts
+
   /** Collect all automata used in a network after instantiating with the right names,
     * ready to be composed. */
   def instantiateAuts(net:Network): List[Automaton] =
@@ -66,7 +84,7 @@ object Network:
         case c:Connector.CAut =>
           instantiate(c,terms,inputs,outputs)
       }
-    println(s"[Inst] got subst: ${subst.subst}")
+    //println(s"[Inst] got subst: ${subst.subst}")
     auts
 
   private def instantiate(c:CAut, iArgs:List[Term], iIns:List[String],iOuts:List[String])(using gen:MutSubst): Automaton =

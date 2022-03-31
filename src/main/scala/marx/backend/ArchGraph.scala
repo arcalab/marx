@@ -2,6 +2,7 @@ package marx.backend
 
 import ArchGraph.{Conn, Port}
 import marx.core.Network
+import marx.typing.Infer
 
 case class ArchGraph(ins: Map[Port,Set[Conn]], outs: Map[Port,Set[Conn]]):
   def in(p:Port,c:Conn)  = ArchGraph(ins + (p -> (ins.getOrElse(p,Set())+c)), outs)
@@ -25,13 +26,14 @@ object ArchGraph:
   type Port = String // port name
   type Conn = (Int,String) // ID and name of connector instance
 
-  def apply(n:Network): ArchGraph  =
+  def apply(n:Network): ArchGraph =
+    val t = Infer(n)
     var g = ArchGraph(Map(),Map())
     for (l,i) <- n.links.zipWithIndex do
       val ts = l.terms.map(t => t.toString).mkString(",")
       val conn = i -> s"${l.name}"//terms
-      for in<-l.inputs do g=g.in(in,conn)
-      for out<-l.outputs do g=g.out(out,conn)
+      for in<-l.inputs do g=g.in(s"$in:${t.ports.getOrElse(in,"")}", conn)
+      for out<-l.outputs do g=g.out(s"$out:${t.ports.getOrElse(out,"")}",conn)
     g
 
 
